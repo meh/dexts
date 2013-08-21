@@ -17,7 +17,7 @@ defmodule Dexts.Table do
 
       name      = Dexts.new!(name, options)
       reference = if options[:automatic] != false do
-        Finalizer.define({ :destroy, id }, Process.whereis(Dexts.Manager))
+        Finalizer.define({ :destroy, name }, Process.whereis(Dexts.Manager))
       end
 
       table(name: name, type: options[:type] || :set, reference: reference)
