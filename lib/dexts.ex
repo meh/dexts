@@ -69,7 +69,7 @@ defmodule Dexts do
       args = [{ :auto_save, options[:save_every] } | args]
     end
 
-    args = case options[:access] do
+    args = case options[:mode] do
       :both -> [{ :access, :read_write } | args]
       :read -> [{ :access, :read } | args]
 
@@ -77,9 +77,9 @@ defmodule Dexts do
     end
 
     args = case options[:type] do
-      :set           -> [:set | args]
-      :bag           -> [:bag | args]
-      :duplicate_bag -> [:duplicate_bag | args]
+      :set           -> [{ :type, :set } | args]
+      :bag           -> [{ :type, :bag } | args]
+      :duplicate_bag -> [{ :type, :duplicate_bag } | args]
 
       nil -> args
     end
