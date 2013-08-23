@@ -184,6 +184,170 @@ defmodule Dexts do
     :dets.foldr(fun, acc, table)
   end
 
+  defmodule Selection do
+    @moduledoc """
+    Selection wraps an `dets:select` result, which may or may not contain a
+    continuation, in case of continuations you can access the next set of
+    values by calling `.next`.
+    """
+
+    @opaque t :: record
+
+    defrecordp :selection, __MODULE__, values: [], continuation: nil
+
+    @doc """
+    Get a Selection from the various select results.
+    """
+    @spec new(:'$end_of_table' | list | { list, any }) :: t | nil
+    def new(value) do
+      case value do
+        :'$end_of_table' -> nil
+        []               -> nil
+        { [], _ }        -> nil
+
+        { v, c } -> selection(values: v, continuation: c)
+        [_ | _]  -> selection(values: value)
+      end
+    end
+
+    @doc """
+    Get the values in the current Selection.
+    """
+    @spec values(t) :: [any]
+    def values(selection(values: v)) do
+      v
+    end
+
+    @doc """
+    Get the next set of values wrapped in another Selection, returns nil if
+    there are no more.
+    """
+    @spec next(t) :: t | nil
+    def next(selection(continuation: nil)) do
+      nil
+    end
+
+    def next(selection(continuation: c)) do
+      new(:dets.select(c))
+    end
+  end
+
+  @doc """
+  Select records in the given table using a match_spec, see `dets:select`.
+  """
+  @spec select(table, any) :: Selection.t | nil
+  def select(table, match_spec) do
+    Selection.new(:dets.select(table, match_spec))
+  end
+
+  @doc """
+  Select records in the given table using a match_spec passing a limit, see
+  `dets:select`.
+  """
+  @spec select(table, non_neg_integer, any) :: Selection.t | nil
+  def select(table, limit, match_spec) when is_integer limit do
+    Selection.new(:dets.select(table, match_spec, limit))
+  end
+
+  defmodule Match do
+    @moduledoc """
+    Match wraps an `dets:match` or `dets:match_object` result, which may or may
+    not contain a continuation, in case of continuations you can access the
+    next set of values by calling `.next`.
+    """
+
+    @opaque t :: record
+
+    defrecordp :match, __MODULE__, values: [], continuation: nil, whole: false
+
+    @doc """
+    Get a Match from the various match results.
+    """
+    def new(value, whole // false) do
+      case value do
+        :'$end_of_table' -> nil
+        []               -> nil
+        { [], _ }        -> nil
+
+        { v, c } -> match(values: v, continuation: c, whole: whole)
+        [_ | _]  -> match(values: value, whole: whole)
+      end
+    end
+
+    @doc """
+    Check if the Match is matching whole objects.
+    """
+    @spec whole?(t) :: boolean
+    def whole?(match(whole: whole)) do
+      whole
+    end
+
+    @doc """
+    Get the values in the current Match.
+    """
+    @spec values(t) :: [any]
+    def values(match(values: v)) do
+      v
+    end
+
+    @doc """
+    Get the next set of values wrapped in another Match, returns nil if there
+    are no more.
+    """
+    @spec next(t) :: Match.t | nil
+    def next(match(continuation: nil)) do
+      nil
+    end
+
+    def next(match(whole: true, continuation: c)) do
+      new(:dets.match_object(c))
+    end
+
+    def next(match(whole: false, continuation: c)) do
+      new(:dets.match(c))
+    end
+  end
+
+  @doc """
+  Match records from the given table with the given pattern, see `dets:match`.
+  """
+  @spec match(table, any) :: Match.t | nil
+  def match(table, pattern) do
+    Match.new(:dets.match(table, pattern))
+  end
+
+  @doc """
+  Match records from the given table with the given pattern and options or
+  limit, see `dets:match`.
+
+  ## Options
+
+  * `:whole` when true it returns the whole record.
+  * `:delete` when true it deletes the matching records instead of returning
+    them.
+  """
+  @spec match(table, any | integer, Keyword.t | any) :: Match.t | nil
+  def match(table, pattern, delete: true) do
+    :dets.match_delete(table, pattern)
+  end
+
+  def match(table, pattern, whole: true) do
+    Match.new(:dets.match_object(table, pattern))
+  end
+
+  def match(table, limit, pattern) when is_integer limit do
+    Match.new(:dets.match(table, pattern, limit))
+  end
+
+  @doc """
+  Match record from the given table with the given pattern, options and limit,
+  see `dets:match_object`.
+  """
+  @spec match(table, integer, any, Keyword.t) :: Match.t | nil
+  def match(table, limit, pattern, whole: true) do
+    Match.new(:dets.match_object(table, pattern, limit))
+  end
+
   def write(table, object, options // []) do
     if options[:overwrite] == false do
       :dets.insert_new(table, object)
