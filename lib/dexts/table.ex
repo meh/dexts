@@ -13,8 +13,6 @@ defmodule Dexts.Table do
 
   def new(name, options // []) do
     if options[:automatic] != false do
-      options = Keyword.put(options, :access, :public)
-
       name      = Dexts.new!(name, options)
       reference = if options[:automatic] != false do
         Finalizer.define({ :destroy, name }, Process.whereis(Dexts.Manager))
