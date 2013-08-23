@@ -9,42 +9,56 @@
 defmodule Dexts.Table do
   @opaque t :: { Dexts.Table, Dexts.table, :bag | :duplicate_bag | :set }
 
-  defrecordp :table, __MODULE__, name: nil, type: nil, reference: nil
+  defrecordp :table, __MODULE__, id: nil, type: nil, reference: nil
 
   def new(name, options // []) do
     if options[:automatic] != false do
-      name      = Dexts.new!(name, options)
+      id        = Dexts.new!(name, options)
       reference = if options[:automatic] != false do
-        Finalizer.define({ :destroy, name }, Process.whereis(Dexts.Manager))
+        Finalizer.define({ :destroy, id }, Process.whereis(Dexts.Manager))
       end
 
-      table(name: name, type: options[:type] || :set, reference: reference)
+      table(id: id, type: options[:type] || :set, reference: reference)
     else
-      table(name: Dexts.new!(name, options), type: options[:type] || :set)
+      table(id: Dexts.new!(name, options), type: options[:type] || :set)
     end
   end
 
-  def name(table(name: name)) do
-    name
+  def open(name, options // []) do
+    if options[:automatic] != false do
+      id        = Dexts.open!(name)
+      reference = if options[:automatic] != false do
+        Finalizer.define({ :destroy, id }, Process.whereis(Dexts.Manager))
+      end
+
+      table(id: id, type: options[:type] || :set, reference: reference)
+    else
+      table(id: Dexts.open!(name), type: options[:type] || :set)
+    end
+
   end
 
-  def clear(table(name: name)) do
-    Dexts.clear(name)
+  def id(table(id: id)) do
+    id
   end
 
-  def close(table(name: name)) do
-    Dexts.close(name)
+  def clear(table(id: id)) do
+    Dexts.clear(id)
   end
 
-  def read(key, table(name: name)) do
-    Dexts.read(name, key)
+  def close(table(id: id)) do
+    Dexts.close(id)
   end
 
-  def at(slot, table(name: name)) do
-    Dexts.at(name, slot)
+  def read(key, table(id: id)) do
+    Dexts.read(id, key)
   end
 
-  def write(object, options // [], table(name: name)) do
-    Dexts.write(name, object, options)
+  def at(slot, table(id: id)) do
+    Dexts.at(id, slot)
+  end
+
+  def write(object, options // [], table(id: id)) do
+    Dexts.write(id, object, options)
   end
 end
