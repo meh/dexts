@@ -9,7 +9,7 @@
 defmodule Dexts.Table do
   @opaque t :: { Dexts.Table, Dexts.table, :bag | :duplicate_bag | :set }
 
-  defrecordp :table, name: nil, type: nil, reference: nil
+  defrecordp :table, __MODULE__, name: nil, type: nil, reference: nil
 
   def new(name, options // []) do
     if options[:automatic] != false do
