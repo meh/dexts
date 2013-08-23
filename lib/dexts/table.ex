@@ -58,6 +58,49 @@ defmodule Dexts.Table do
     Dexts.at(id, slot)
   end
 
+  @doc """
+  Select records in the table using a match_spec, see `dets:select`.
+  """
+  @spec select(any, t) :: [any]
+  def select(match_spec, table(id: id)) do
+    Dexts.select(id, match_spec)
+  end
+
+  @doc """
+  Select records in the table using a match_spec and passing a limit,
+  `dets:select`.
+  """
+  @spec select(integer, any, t) :: [any]
+  def select(limit, match_spec, table(id: id)) do
+    Dexts.select(limit, id, match_spec)
+  end
+
+  @doc """
+  Match records from the table with the given pattern, see `dets:match`.
+  """
+  @spec match(any, t) :: Match.t | nil
+  def match(pattern, table(id: id)) do
+    Dexts.match(id, pattern)
+  end
+
+  @doc """
+  Match records from the table with the given pattern and options or limit, see
+  `dets:match`.
+  """
+  @spec match(any | integer, Keyword.t | any, t) :: Match.t | nil
+  def match(limit_or_pattern, options_or_pattern, table(id: id)) do
+    Dexts.match(id, limit_or_pattern, options_or_pattern)
+  end
+
+  @doc """
+  Match records from the table with the given pattern, options and limit, see
+  `dets:match`.
+  """
+  @spec match(integer, any, Keyword.t, t) :: Match.t | nil
+  def match(limit, pattern, options, table(id: id)) do
+    Dexts.match(id, limit, pattern, options)
+  end
+
   def write(object, options // [], table(id: id)) do
     Dexts.write(id, object, options)
   end
