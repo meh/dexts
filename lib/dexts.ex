@@ -21,11 +21,15 @@ defmodule Dexts do
   @type table :: term
 
   def open(path) do
+    if path |> is_binary do
+      path = String.to_char_list! path
+    end
+
     :dets.open_file(path)
   end
 
   def open!(path) do
-    case :dets.open_file(path) do
+    case open(path) do
       { :ok, name } ->
         name
 
@@ -35,6 +39,10 @@ defmodule Dexts do
   end
 
   def new(name, options // []) do
+    if name |> is_binary do
+      name = String.to_char_list! name
+    end
+
     args = []
 
     args = [{ :keypos, (options[:index] || 0) + 1 } | args]
