@@ -169,6 +169,22 @@ defmodule Dexts.Table do
     Dexts.match(id, limit, pattern, options)
   end
 
+  @doc """
+  Get the number of terms in the table.
+  """
+  @spec count(t) :: non_neg_integer
+  def count(table(id: id)) do
+    Dexts.count(id)
+  end
+
+  @doc """
+  Count the number of terms matching the match_spec, see `ets:select_count`.
+  """
+  @spec count(any, t) :: non_neg_integer
+  def count(spec, table(id: id)) do
+    Dexts.count(id, spec)
+  end
+
   def write(object, options // [], table(id: id)) do
     Dexts.write(id, object, options)
   end
