@@ -95,6 +95,38 @@ defmodule Dexts.Table do
   end
 
   @doc """
+  Get the first key in table, see `ets:first`.
+  """
+  @spec first(t) :: any
+  def first(table(id: id)) do
+    Dexts.first(id)
+  end
+
+  @doc """
+  Get the next key in the table, see `ets:next`.
+  """
+  @spec next(any, t) :: any
+  def next(key, table(id: id)) do
+    Dexts.next(id, key)
+  end
+
+  @doc """
+  Return an iterator for the table.
+  """
+  @spec to_sequence(t) :: Dexts.Table.Sequence.t
+  def to_sequence(self) do
+    Dexts.Table.Sequence.new(self)
+  end
+
+  @doc """
+  Return an iterator for the table.
+  """
+  @spec to_sequence!(t) :: Dexts.Table.Sequence.t
+  def to_sequence!(self) do
+    Dexts.Table.Sequence.new(self, safe: false)
+  end
+
+  @doc """
   Select terms in the table using a match_spec, see `dets:select`.
   """
   @spec select(any, t) :: [any]
