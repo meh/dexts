@@ -111,4 +111,9 @@ defmodule Dexts.Table do
   def write(object, options // [], table(id: id)) do
     Dexts.write(id, object, options)
   end
+
+  @spec save(t) :: none
+  def save(table(id: id)) do
+    Dexts.save(id)
+  end
 end
