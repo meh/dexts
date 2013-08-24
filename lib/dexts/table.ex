@@ -31,9 +31,11 @@ defmodule Dexts.Table do
         Finalizer.define({ :destroy, id }, Process.whereis(Dexts.Manager))
       end
 
-      table(id: id, type: options[:type] || :set, reference: reference)
+      table(id: id, type: Dexts.info(id, :type), reference: reference)
     else
-      table(id: Dexts.open!(name), type: options[:type] || :set)
+      id = Dexts.open!(name)
+
+      table(id: id, type: Dexts.info(id, :type))
     end
   end
 
