@@ -20,6 +20,22 @@ defmodule Dexts do
 
   @type table :: term
 
+  @spec info(table) :: Keyword.t | nil
+  def info(table) do
+    case :dets.info(table) do
+      :undefined -> nil
+      value      -> value
+    end
+  end
+
+  @spec info(table, atom) :: term | nil
+  def info(table, key) do
+    case :dets.info(table, key) do
+      :undefined -> nil
+      value      -> value
+    end
+  end
+
   def open(path) do
     if path |> is_binary do
       path = String.to_char_list! path
@@ -331,7 +347,7 @@ defmodule Dexts do
   """
   @spec count(table) :: non_neg_integer
   def count(table) do
-    info(table, :no_objects)
+    info(table, :size)
   end
 
   @doc """
