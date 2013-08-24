@@ -48,6 +48,46 @@ defmodule Dexts.Table do
   end
 
   @doc """
+  Check if the table is a bag.
+  """
+  @spec bag?(t) :: boolean
+  def bag?(table(type: type)) do
+    type == :bag
+  end
+
+  @doc """
+  Check if the table is a duplicate bag.
+  """
+  @spec duplicate_bag?(t) :: boolean
+  def duplicate_bag?(table(type: type)) do
+    type == :duplicate_bag
+  end
+
+  @doc """
+  Check if the table is a set.
+  """
+  @spec set?(t) :: boolean
+  def set?(table(type: type)) do
+    type == :set
+  end
+
+  @doc """
+  Get info about the table, see `dets:info`.
+  """
+  @spec info(t) :: [any] | nil
+  def info(table(id: id)) do
+    Dexts.info(id)
+  end
+
+  @doc """
+  Get info about the table, see `dets:info`.
+  """
+  @spec info(atom, t) :: any | nil
+  def info(key, table(id: id)) do
+    Dexts.info(id, key)
+  end
+
+  @doc """
   Clear the contents of the table, see `dets:delete_all_objects`.
   """
   def clear(table(id: id)) do
