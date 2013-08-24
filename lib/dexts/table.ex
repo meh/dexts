@@ -50,6 +50,13 @@ defmodule Dexts.Table do
     Dexts.close(id)
   end
 
+  def member?(key, table(id: id)) do
+    case Dexts.read(id, key) do
+      [] -> false
+      _  -> true
+    end
+  end
+
   def read(key, table(id: id)) do
     Dexts.read(id, key)
   end
