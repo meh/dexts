@@ -29,25 +29,25 @@ defmodule Dexts.Table.Sequence do
     safe
   end
 
+  def first(sequence(table: table, key: nil)) do
+    table.read(table.first)
+  end
+
   def first(sequence(table: table, key: key)) do
-    if key == nil do
-      table.read(table.first)
-    else
-      table.read(key)
-    end
+    table.read(key)
+  end
+
+  def next(sequence(table: table, key: nil) = it) do
+    sequence(it, key: table.next(table.first))
   end
 
   def next(sequence(table: table, key: key) = it) do
-    if key == nil do
-      sequence(it, key: table.next(table.first))
-    else
-      case table.next(key) do
-        nil ->
-          nil
+    case table.next(key) do
+      nil ->
+        nil
 
-        key ->
-          sequence(it, key: key)
-      end
+      key ->
+        sequence(it, key: key)
     end
   end
 end
