@@ -149,7 +149,7 @@ defmodule Dexts do
   @doc """
   Fold the given table from the left, see `dets:foldl`.
   """
-  @spec foldl(table, any, (record, any -> any)) :: any
+  @spec foldl(table, any, (term, any -> any)) :: any
   def foldl(table, acc, fun) do
     :dets.foldl(fun, acc, table)
   end
@@ -157,7 +157,7 @@ defmodule Dexts do
   @doc """
   Fold the given table from the right, see `dets:foldr`.
   """
-  @spec foldr(table, any, (record, any -> any)) :: any
+  @spec foldr(table, any, (term, any -> any)) :: any
   def foldr(table, acc, fun) do
     :dets.foldr(fun, acc, table)
   end
@@ -211,7 +211,7 @@ defmodule Dexts do
   end
 
   @doc """
-  Select records in the given table using a match_spec, see `dets:select`.
+  Select terms in the given table using a match_spec, see `dets:select`.
   """
   @spec select(table, any) :: Selection.t | nil
   def select(table, match_spec) do
@@ -219,7 +219,7 @@ defmodule Dexts do
   end
 
   @doc """
-  Select records in the given table using a match_spec passing a limit, see
+  Select terms in the given table using a match_spec passing a limit, see
   `dets:select`.
   """
   @spec select(table, non_neg_integer, any) :: Selection.t | nil
@@ -287,7 +287,7 @@ defmodule Dexts do
   end
 
   @doc """
-  Match records from the given table with the given pattern, see `dets:match`.
+  Match terms from the given table with the given pattern, see `dets:match`.
   """
   @spec match(table, any) :: Match.t | nil
   def match(table, pattern) do
@@ -295,13 +295,13 @@ defmodule Dexts do
   end
 
   @doc """
-  Match records from the given table with the given pattern and options or
+  Match terms from the given table with the given pattern and options or
   limit, see `dets:match`.
 
   ## Options
 
-  * `:whole` when true it returns the whole record.
-  * `:delete` when true it deletes the matching records instead of returning
+  * `:whole` when true it returns the whole term.
+  * `:delete` when true it deletes the matching terms instead of returning
     them.
   """
   @spec match(table, any | integer, Keyword.t | any) :: Match.t | nil
@@ -318,7 +318,7 @@ defmodule Dexts do
   end
 
   @doc """
-  Match record from the given table with the given pattern, options and limit,
+  Match term from the given table with the given pattern, options and limit,
   see `dets:match_object`.
   """
   @spec match(table, integer, any, Keyword.t) :: Match.t | nil
