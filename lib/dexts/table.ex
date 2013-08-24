@@ -71,8 +71,20 @@ defmodule Dexts.Table do
     end
   end
 
-  def read(key, table(id: id)) do
-    Dexts.read(id, key)
+  @doc """
+  Read terms from the table, if it's a set it returns a single term, otherwise
+  it returns a list of terms, see `dets:lookup`.
+  """
+  @spec read(any, t) :: [term] | term
+  def read(key, table(id: id, type: type)) when type in [:bag, :duplicate_bag] do
+    case Dexts.read(id, key) do
+      [] -> nil
+      r  -> r
+    end
+  end
+
+  def read(key, table(id: id, type: type)) when type in [:set] do
+    Enum.first Dexts.read(id, key)
   end
 
   def at(slot, table(id: id)) do
