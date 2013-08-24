@@ -326,6 +326,28 @@ defmodule Dexts do
     Match.new(:dets.match_object(table, pattern, limit))
   end
 
+  @doc """
+  Get the number of terms in the given table.
+  """
+  @spec count(table) :: non_neg_integer
+  def count(table) do
+    info(table, :no_objects)
+  end
+
+  @doc """
+  Count the number of terms matching the match_spec.
+  """
+  @spec count(table, any) :: non_neg_integer
+  def count(table, match_spec) do
+    case select(table, match_spec) do
+      nil ->
+        0
+
+      selection ->
+        selection.values |> length
+    end
+  end
+
   def write(table, object, options // []) do
     if options[:overwrite] == false do
       :dets.insert_new(table, object)
