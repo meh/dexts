@@ -87,12 +87,15 @@ defmodule Dexts.Table do
     Enum.first Dexts.read(id, key)
   end
 
+  @doc """
+  Read the terms in the given slot, see `dets:slot`.
+  """
   def at(slot, table(id: id)) do
     Dexts.at(id, slot)
   end
 
   @doc """
-  Select records in the table using a match_spec, see `dets:select`.
+  Select terms in the table using a match_spec, see `dets:select`.
   """
   @spec select(any, t) :: [any]
   def select(match_spec, table(id: id)) do
