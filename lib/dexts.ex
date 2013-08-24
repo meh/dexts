@@ -147,28 +147,6 @@ defmodule Dexts do
   end
 
   @doc """
-  Get the previous key in the given table, see `dets:prev`.
-  """
-  @spec prev(table, any) :: any | nil
-  def prev(table, key) do
-    case :dets.prev(table, key) do
-      :"$end_of_table" -> nil
-      key              -> key
-    end
-  end
-
-  @doc """
-  Get the last key in the given table, see `dets:prev`.
-  """
-  @spec last(table) :: any | nil
-  def last(table) do
-    case :dets.last(table) do
-      :"$end_of_table" -> nil
-      key              -> key
-    end
-  end
-
-  @doc """
   Fold the given table from the left, see `dets:foldl`.
   """
   @spec foldl(table, any, (record, any -> any)) :: any
