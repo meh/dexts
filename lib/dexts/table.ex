@@ -35,7 +35,6 @@ defmodule Dexts.Table do
     else
       table(id: Dexts.open!(name), type: options[:type] || :set)
     end
-
   end
 
   @doc """
