@@ -38,18 +38,32 @@ defmodule Dexts.Table do
 
   end
 
+  @doc """
+  Get the id of the table, usable with the raw :dets functions or Exts wrapped
+  ones.
+  """
   def id(table(id: id)) do
     id
   end
 
+  @doc """
+  Clear the contents of the table, see `dets:delete_all_objects`.
+  """
   def clear(table(id: id)) do
     Dexts.clear(id)
   end
 
+  @doc """
+  Close the table, see `dets:close`.
+  """
   def close(table(id: id)) do
     Dexts.close(id)
   end
 
+  @doc """
+  Check if the table contains the given key.
+  """
+  @spec member?(term, t) :: boolean
   def member?(key, table(id: id)) do
     case Dexts.read(id, key) do
       [] -> false
@@ -74,7 +88,7 @@ defmodule Dexts.Table do
   end
 
   @doc """
-  Select records in the table using a match_spec and passing a limit,
+  Select terms in the table using a match_spec and passing a limit,
   `dets:select`.
   """
   @spec select(integer, any, t) :: [any]
@@ -83,7 +97,7 @@ defmodule Dexts.Table do
   end
 
   @doc """
-  Match records from the table with the given pattern, see `dets:match`.
+  Match terms from the table with the given pattern, see `dets:match`.
   """
   @spec match(any, t) :: Match.t | nil
   def match(pattern, table(id: id)) do
@@ -91,7 +105,7 @@ defmodule Dexts.Table do
   end
 
   @doc """
-  Match records from the table with the given pattern and options or limit, see
+  Match terms from the table with the given pattern and options or limit, see
   `dets:match`.
   """
   @spec match(any | integer, Keyword.t | any, t) :: Match.t | nil
@@ -100,7 +114,7 @@ defmodule Dexts.Table do
   end
 
   @doc """
-  Match records from the table with the given pattern, options and limit, see
+  Match terms from the table with the given pattern, options and limit, see
   `dets:match`.
   """
   @spec match(integer, any, Keyword.t, t) :: Match.t | nil
