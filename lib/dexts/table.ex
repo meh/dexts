@@ -194,3 +194,116 @@ defmodule Dexts.Table do
     Dexts.save(id)
   end
 end
+
+defimpl Data.Dictionary, for: Dexts.Table do
+  def get(self, key, default // nil) do
+    case self.read(key) do
+      { ^key, value } ->
+        value
+
+      nil ->
+        default
+    end
+  end
+
+  def get!(self, key) do
+    case self.read(key) do
+      { ^key, value } ->
+        value
+
+      nil ->
+        raise Data.Missing, key: key
+    end
+  end
+
+  def put(self, key, value) do
+    self.write { key, value }
+    self
+  end
+
+  def delete(self, key) do
+    self.delete(key)
+    self
+  end
+
+  def keys(self) do
+    case self.select([{{ :'$1', :'$2' }, [], [:'$1'] }]) do
+      nil -> []
+      s   -> s.values
+    end
+  end
+
+  def values(self) do
+    case self.select([{{ :'$1', :'$2' }, [], [:'$2'] }]) do
+      nil -> []
+      s   -> s.values
+    end
+  end
+end
+
+defimpl Data.Contains, for: Dexts.Table do
+  def contains?(self, { key, value }) do
+    case self.read(key) do
+      { ^key, ^value } ->
+        true
+
+      _ ->
+        false
+    end
+  end
+
+  def contains?(self, key) do
+    case self.read(key) do
+      { ^key, _ } ->
+        true
+
+      nil ->
+        false
+    end
+  end
+end
+
+defimpl Data.Counted, for: Dexts.Table do
+  def count(self) do
+    self.size
+  end
+end
+
+defimpl Data.Emptyable, for: Dexts.Table do
+  def empty?(self) do
+    self.count == 0
+  end
+
+  def clear(self) do
+    self.clear
+    self
+  end
+end
+
+defimpl Data.Reducible, for: Dexts.Table do
+  def reduce(self, acc, fun) do
+    self.foldl(acc, fun)
+  end
+end
+
+defimpl Data.Sequenceable, for: Dexts.Table do
+  defdelegate to_sequence(self), to: Dexts.Table
+end
+
+defimpl Data.Listable, for: Dexts.Table do
+  defdelegate to_list(self), to: Dexts.Table
+end
+
+defimpl Access, for: Dexts.Table do
+  def access(table, key) do
+    table.read(key)
+  end
+end
+
+defimpl Inspect, for: Dexts.Table do
+  import Inspect.Algebra
+
+  def inspect(self, _opts) do
+    concat ["#Dexts.Table<", Kernel.inspect(self.id, _opts), ">"]
+  end
+end
