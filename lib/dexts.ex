@@ -93,19 +93,15 @@ defmodule Dexts do
       args = [{ :auto_save, options[:save_every] } | args]
     end
 
-    args = case options[:mode] do
+    args = case options[:mode] || :both do
       :both -> [{ :access, :read_write } | args]
       :read -> [{ :access, :read } | args]
-
-      nil -> args
     end
 
-    args = case options[:type] do
+    args = case options[:type] || :set do
       :set           -> [{ :type, :set } | args]
       :bag           -> [{ :type, :bag } | args]
       :duplicate_bag -> [{ :type, :duplicate_bag } | args]
-
-      nil -> args
     end
 
     :dets.open_file(name, args)
