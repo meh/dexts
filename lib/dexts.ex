@@ -348,6 +348,12 @@ defmodule Dexts do
     end
   end
 
+  @doc """
+  Write the given term to the given table optionally disabling overwriting,
+  see `dets:insert` and `dets:insert_new`.
+  """
+  @spec write(table, term)            :: boolean
+  @spec write(table, term, Keyword.t) :: boolean
   def write(table, object, options // []) do
     if options[:overwrite] == false do
       :dets.insert_new(table, object)
@@ -356,6 +362,10 @@ defmodule Dexts do
     end
   end
 
+  @doc """
+  Synchronize the table to disk, see `dets:sync`.
+  """
+  @spec save(table) :: :ok | { :error, term }
   def save(table) do
     :dets.sync(table)
   end
