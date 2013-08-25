@@ -159,6 +159,22 @@ defmodule Dexts do
   end
 
   @doc """
+  Get the keys in the given table.
+  """
+  @spec keys(table) :: [term]
+  def keys(table) do
+    do_keys([], table, first(table))
+  end
+
+  defp do_keys(acc, _, nil) do
+    acc
+  end
+
+  defp do_keys(acc, table, key) do
+    [key | acc] |> do_keys(table, next(table, key))
+  end
+
+  @doc """
   Fold the given table from the left, see `dets:foldl`.
   """
   @spec foldl(table, any, (term, any -> any)) :: any
