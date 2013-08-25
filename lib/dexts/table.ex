@@ -152,6 +152,14 @@ defmodule Dexts.Table do
   end
 
   @doc """
+  Get the keys in the table.
+  """
+  @spec keys(t) :: [term]
+  def keys(table(id: id)) do
+    Dexts.keys(id)
+  end
+
+  @doc """
   Return an iterator for the table.
   """
   @spec to_sequence(t) :: Dexts.Table.Sequence.t
