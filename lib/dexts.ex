@@ -35,12 +35,8 @@ defmodule Dexts do
     end
   end
 
-  def open(path) do
-    if path |> is_binary do
-      path = List.from_char_data! path
-    end
-
-    :dets.open_file(path)
+  def open(path) when path |> is_binary do
+    :dets.open_file(List.from_char_data!(path))
   end
 
   def open!(path) do
@@ -53,11 +49,7 @@ defmodule Dexts do
     end
   end
 
-  def new(name, options \\ []) do
-    if name |> is_binary do
-      name = List.from_char_data! name
-    end
-
+  def new(name, options \\ []) when name |> is_binary do
     args = []
 
     args = [{ :keypos, (options[:index] || 0) + 1 } | args]
@@ -103,10 +95,10 @@ defmodule Dexts do
       :duplicate_bag -> [{ :type, :duplicate_bag } | args]
     end
 
-    :dets.open_file(name, args)
+    :dets.open_file(List.from_char_data!(name), args)
   end
 
-  def new!(name, options \\ []) do
+  def new!(name, options \\ []) when name |> is_binary do
     case new(name, options) do
       { :ok, name } ->
         name
