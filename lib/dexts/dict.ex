@@ -7,265 +7,311 @@
 #  0. You just DO WHAT THE FUCK YOU WANT TO.
 
 defmodule Dexts.Dict do
-  @moduledoc """
-  Wraps an ets table into a Dict interface, keep in mind this Dict is
-  **mutable**.
-  """
+  defstruct [:id, :type]
 
-  @behaviour Dict
+  alias __MODULE__, as: T
 
-  defrecordp :dict, table: nil
+  use Dict.Behaviour
 
-  @doc """
-  Create a new empty dict.
-  """
-  @spec new :: Dict.t
-  def new(options // []) do
-    dict(table: Dexts.Table.new(options))
+  def new do
+    raise FileError
   end
 
   @doc """
-  Puts the given key and value in the dict.
+  Wrap a table or create one with the passed options.
   """
-  def put(dict(table: table) = self, key, value) do
-    table.write({ key, value })
+  @spec new(integer | atom | Keyword.t) :: t
+  def new(name, options \\ []) do
+    case Dexts.new(name, options) do
+      { :ok, id } ->
+        { :ok, %T{id: id, type: options[:type] || :set} }
+
+      { :error, reason } ->
+        { :error, reason }
+    end
+  end
+
+  def new!(name, options \\ []) do
+    %T{id: Dexts.new!(name, options), type: options[:type] || :set}
+  end
+
+  def open(name) do
+    case Dexts.open(name) do
+      { :error, reason } ->
+        { :error, reason }
+
+      { :ok, id } ->
+        { :ok, %T{id: id, type: Dexts.info(id, :type)} }
+    end
+  end
+
+  def open!(name) do
+    id = Dexts.open!(name)
+
+    %T{id: id, type: Dexts.info(id, :type)}
+  end
+
+  @doc """
+  Check if the table is a bag.
+  """
+  @spec bag?(t) :: boolean
+  def bag?(%T{type: type}) do
+    type == :bag
+  end
+
+  @doc """
+  Check if the table is a duplicate bag.
+  """
+  @spec duplicate_bag?(t) :: boolean
+  def duplicate_bag?(%T{type: type}) do
+    type == :duplicate_bag
+  end
+
+  @doc """
+  Check if the table is a set.
+  """
+  @spec set?(t) :: boolean
+  def set?(%T{type: type}) do
+    type == :set
+  end
+
+  @doc """
+  Get info about the table, see `dets:info`.
+  """
+  @spec info(t) :: [any] | nil
+  def info(%T{id: id}) do
+    Dexts.info(id)
+  end
+
+  @doc """
+  Get info about the table, see `dets:info`.
+  """
+  @spec info(t, atom) :: any | nil
+  def info(%T{id: id}, key) do
+    Dexts.info(id, key)
+  end
+
+  def size(%T{id: id}) do
+    Dexts.count(id)
+  end
+
+  @doc """
+  Clear the contents of the table, see `dets:delete_all_objects`.
+  """
+  def clear(%T{id: id}) do
+    Dexts.clear(id)
+  end
+
+  @doc """
+  Close the table, see `dets:close`.
+  """
+  def close(%T{id: id}) do
+    Dexts.close(id)
+  end
+
+  def delete(%T{id: id}, key_or_pattern) do
+    Dexts.delete(id, key_or_pattern)
+  end
+
+  def put(%T{id: id} = self, key, value) do
+    Dexts.write id, { key, value }
 
     self
   end
 
-  @doc """
-  Puts the given value under key in the dictionary only if one does not exist
-  yet.
-  """
-  def put_new(dict(table: table) = self, key, value) do
-    table.write({ key, value }, overwrite: false)
+  def fetch(%T{id: id, type: type}, key) when type in [:bag, :duplicate_bag] do
+    case Dexts.read(id, key) do
+      [] ->
+        :error
 
-    self
-  end
-
-  @doc """
-  Updates the key in the dictionary according to the given function.
-
-  Raises if the key does not exist in the dictionary.
-  """
-  def update(dict(table: table) = self, key, fun) when is_function(fun, 1) do
-    if table.member?(key) do
-      { _, value } = table.read(key)
-
-      table.write({ key, fun.(value) })
-    else
-      raise KeyError, key: key
+      values ->
+        { :ok, for({ _, value } <- values, do: value) }
     end
-
-    self
   end
 
-  @doc """
-  Updates the key in the dictionary according to the given function. Adds
-  initial value if the key does not exist in the dicionary.
-  """
-  def update(dict(table: table) = self, key, value, fun) when is_function(fun, 1) do
-    table.write({ key, value }, overwrite: false)
-    table.write({ key, fun.(elem table.read(key), 1) })
+  def fetch(%T{id: id, type: type}, key) when type in [:set, :ordered_set] do
+    case Dexts.read(id, key) do
+      [] ->
+        :error
 
-    self
+      [{ _, value }] ->
+        { :ok, value }
+    end
   end
 
-  @doc """
-  Gets the value under key from the dict.
-  """
-  def get(dict(table: table), key, default // nil) do
-    case table.read(key) do
-      { _, value } -> value
-      nil          -> default
+  def update(self, key, initial, fun) do
+    case fetch(self, key) do
+      { :ok, value } ->
+        put(self, key, fun.(value))
+
+      :error ->
+        put(self, key, initial)
+    end
+  end
+
+  def update!(self, key, fun) do
+    case fetch(self, key) do
+      { :ok, value } ->
+        put(self, key, fun.(value))
+
+      :error ->
+        raise KeyError, key: key, term: self
     end
   end
 
   @doc """
-  Gets the value under key from the dict, raises KeyError if such key does not
-  exist.
+  Read the terms in the given slot, see `ets:slot`.
   """
-  def get!(dict(table: table), key) do
-    case table.read(key) do
-      { _, value } -> value
-      nil          -> raise KeyError, key: key
+  @spec at(integer, t) :: [term]
+  def at(%T{id: id}, slot) do
+    Dexts.at(id, slot)
+  end
+
+  @doc """
+  Get the first key in table, see `ets:first`.
+  """
+  @spec first(t) :: any
+  def first(%T{id: id}) do
+    Dexts.first(id)
+  end
+
+  @doc """
+  Get the next key in the table, see `ets:next`.
+  """
+  @spec next(any, t) :: any
+  def next(%T{id: id}, key) do
+    Dexts.next(id, key)
+  end
+
+  @doc """
+  Get the previous key in the table, see `ets:prev`.
+  """
+  @spec prev(any, t) :: any
+  def prev(%T{id: id}, key) do
+    Dexts.prev(id, key)
+  end
+
+  @doc """
+  Get the last key in the table, see `ets:last`.
+  """
+  @spec last(t) :: any
+  def last(%T{id: id}) do
+    Dexts.last(id)
+  end
+
+  def keys(self) do
+    case select(self, [{{ :'$1', :'$2' }, [], [:'$1'] }]) do
+      nil -> []
+      s   -> s.values
     end
   end
 
-  @doc """
-  Checks if the dict has the given key.
-  """
-  def has_key?(dict(table: table), key) do
-    case table.member?(key) do
-      nil -> false
-      _   -> true
-    end
-  end
-
-  @doc """
-  Deletes a value from the dict.
-  """
-  def delete(dict(table: table) = self, key) do
-    table.delete(key)
-
-    self
-  end
-
-  @doc """
-  Drops the keys from the given dict.
-  """
-  def drop(self, keys) do
-    Enum.each keys, delete(self, &1)
-
-    self
-  end
-
-  @doc """
-  Checks if the two dicts are the same.
-  """
-  def equal?(dict(table: table), dict(table: other)) do
-    # XXX: should it check the contents too?
-    table.id == other.id
-  end
-
-  @doc """
-  Returns the value under key from the dict and deletes it.
-  """
-  def pop(self, key, default // nil) do
-    value = get(self, key, default)
-    delete(self, key)
-
-    { value, self }
-  end
-
-  @doc """
-  Splits a dict into two dicts, one containing entries with key in the keys list,
-  and another containing entries with key not in keys.
-
-  Returns a 2-tuple of the new dicts.
-
-  Keep in mind this **creates two new ets tables**, use sparingly.
-  """
-  def split(self, keys) do
-    first  = Dexts.Dict.new
-    second = Dexts.Dict.new
-
-    Enum.each self, fn { key, value } ->
-      if key in keys do
-        put(first, key, value)
-      else
-        put(second, key, value)
-      end
-    end
-
-    { first, second }
-  end
-
-  @doc """
-  Returns a new dict with only the entries which key is in keys.
-
-  Keep in mind this **creates a new ets table**, use sparingly.
-  """
-  def take(self, keys) do
-    result = Dexts.Dict.new
-
-    Enum.each keys, fn key ->
-      if has_key?(self, key) do
-        put(result, key, get(self, key))
-      end
-    end
-
-    result
-  end
-
-  @doc """
-  Returns the dict size.
-  """
-  def size(dict(table: table)) do
-    table.count
-  end
-
-  @doc """
-  Clear the table.
-  """
-  def empty(dict(table: table)) do
-    table.clear
-  end
-
-  @doc """
-  Converts the dict to a list.
-  """
-  def to_list(dict(table: table)) do
-    table.to_list
-  end
-
-  @doc """
-  Get all keys in the dict.
-  """
-  def keys(dict(table: table)) do
-    case table.select([{{ :'$1', :'$2' }, [], [:'$1'] }]) do
+  def values(self) do
+    case select(self, [{{ :'$1', :'$2' }, [], [:'$2'] }]) do
       nil -> []
       s   -> s.values
     end
   end
 
   @doc """
-  Get all values in the dict.
+  Select terms in the table using a match_spec, see `ets:select`.
   """
-  def values(dict(table: table)) do
-    case table.select([{{ :'$1', :'$2' }, [], [:'$2'] }]) do
-      nil -> []
-      s   -> s.values
-    end
+  @spec select(t, any, Keyword.t) :: [any]
+  def select(%T{id: id}, match_spec, options \\ []) do
+    Dexts.select(id, match_spec, options)
   end
 
   @doc """
-  Merges the other dictionary into the current one.
+  Select terms in the table using a match_spec, traversing in reverse, see
+  `ets:select_reverse`.
   """
-  def merge(dict(table: table) = self, other, callback // fn(_, _, v) -> v end) do
-    Enum.each other, fn { k, v } ->
-      case Dexts.read(table.id, k) do
-        []  -> put(self, k, v)
-        [r] -> put(self, k, callback.(k, r, v))
-      end
-    end
-
-    self
+  @spec reverse_select(t, any) :: [any]
+  def reverse_select(%T{id: id}, match_spec, options \\ []) do
+    Dexts.reverse_select(id, match_spec, options)
   end
 
   @doc """
-  Returns the table wrapped by the dict.
+  Match terms from the table with the given pattern, see `ets:match`.
   """
-  @spec to_table(Dict.t) :: Dexts.Table.t
-  def to_table(dict(table: table)) do
-    table
-  end
-end
-
-defimpl Enumerable, for: Dexts.Dict do
-  def reduce(self, acc, fun) do
-    Dexts.Dict.to_table(self).foldl(acc, fun)
+  @spec match(t, any) :: Match.t | nil
+  def match(%T{id: id}, pattern, options \\ []) do
+    Dexts.match(id, pattern, options)
   end
 
-  def member?(self, key) do
-    self.to_table.member?(key)
+  @doc """
+  Get the number of terms in the table.
+  """
+  @spec count(t) :: non_neg_integer
+  def count(%T{id: id}) do
+    Dexts.count(id)
   end
 
-  def count(self) do
-    Dexts.Dict.to_table(self).count
+  @doc """
+  Count the number of terms matching the match_spec, see `ets:select_count`.
+  """
+  @spec count(t, any) :: non_neg_integer
+  def count(%T{id: id}, spec) do
+    Dexts.count(id, spec)
   end
-end
 
-defimpl Access, for: Dexts.Dict do
-  def access(self, key) do
-    Dexts.Dict.get(self, key, nil)
+  @doc """
+  Fold the table from the left, see `ets:foldl`.
+  """
+  @spec foldl(t, any, (term, any -> any)) :: any
+  def foldl(%T{id: id}, acc, fun) do
+    Dexts.foldl(id, acc, fun)
   end
-end
 
-defimpl Inspect, for: Dexts.Dict do
-  import Inspect.Algebra
+  @doc """
+  Fold the table from the right, see `ets:foldr`.
+  """
+  @spec foldr(t, any, (term, any -> any)) :: any
+  def foldr(%T{id: id}, acc, fun) do
+    Dexts.foldr(id, acc, fun)
+  end
 
-  def inspect(dict, opts) do
-    concat ["#Dexts.Dict<", Kernel.inspect(Dexts.Dict.to_list(dict), opts), ">"]
+  @doc false
+  def reduce(table, acc, fun) do
+    reduce(table, first(table), acc, fun)
+  end
+
+  defp reduce(_table, _key, { :halt, acc }, _fun) do
+    { :halted, acc }
+  end
+
+  defp reduce(table, key, { :suspend, acc }, fun) do
+    { :suspended, acc, &reduce(table, key, &1, fun) }
+  end
+
+  defp reduce(_table, nil, { :cont, acc }, _fun) do
+    { :done, acc }
+  end
+
+  defp reduce(table, key, { :cont, acc }, fun) do
+    reduce(table, next(table, key), fun.({ key, fetch!(table, key) }, acc), fun)
+  end
+
+  defimpl Access do
+    def access(table, key) do
+      Dict.get(table, key)
+    end
+  end
+
+  defimpl Enumerable do
+    def reduce(table, acc, fun) do
+      Dexts.Dict.reduce(table, acc, fun)
+    end
+
+    def member?(table, { key, value }) do
+      { :ok, match?({ :ok, ^value }, Dexts.Dict.fetch(table, key)) }
+    end
+
+    def member?(_, _) do
+      { :ok, false }
+    end
+
+    def count(table) do
+      { :ok, Dexts.Dict.count(table) }
+    end
   end
 end

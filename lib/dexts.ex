@@ -7,14 +7,13 @@
 #  0. You just DO WHAT THE FUCK YOU WANT TO.
 
 defmodule Dexts do
-  defexception FileError, reason: nil do
+  defexception FileError, message: nil do
     @moduledoc """
     Exception thrown if an error occurs when opening a table.
     """
 
-    @spec message(t) :: String.t
-    def message(FileError[reason: reason]) do
-      reason
+    def exception(reason: { :file_error, path, :enoent }) do
+      FileError[message: to_string(path) <> " doesn't exist"]
     end
   end
 
@@ -38,7 +37,7 @@ defmodule Dexts do
 
   def open(path) do
     if path |> is_binary do
-      path = String.to_char_list! path
+      path = List.from_char_data! path
     end
 
     :dets.open_file(path)
@@ -54,9 +53,9 @@ defmodule Dexts do
     end
   end
 
-  def new(name, options // []) do
+  def new(name, options \\ []) do
     if name |> is_binary do
-      name = String.to_char_list! name
+      name = List.from_char_data! name
     end
 
     args = []
@@ -107,7 +106,7 @@ defmodule Dexts do
     :dets.open_file(name, args)
   end
 
-  def new!(name, options // []) do
+  def new!(name, options \\ []) do
     case new(name, options) do
       { :ok, name } ->
         name
@@ -197,9 +196,7 @@ defmodule Dexts do
     values by calling `.next`.
     """
 
-    @opaque t :: record
-
-    defrecordp :selection, __MODULE__, values: [], continuation: nil
+    defstruct values: [], continuation: nil
 
     @doc """
     Get a Selection from the various select results.
@@ -211,17 +208,12 @@ defmodule Dexts do
         []               -> nil
         { [], _ }        -> nil
 
-        { v, c } -> selection(values: v, continuation: c)
-        [_ | _]  -> selection(values: value)
-      end
-    end
+        { values, continuation } ->
+          %Selection{values: values, continuation: continuation}
 
-    @doc """
-    Get the values in the current Selection.
-    """
-    @spec values(t) :: [any]
-    def values(selection(values: v)) do
-      v
+        [_ | _] ->
+          %Selection{values: value}
+      end
     end
 
     @doc """
@@ -229,12 +221,12 @@ defmodule Dexts do
     there are no more.
     """
     @spec next(t) :: t | nil
-    def next(selection(continuation: nil)) do
+    def next(%Selection{continuation: nil}) do
       nil
     end
 
-    def next(selection(continuation: c)) do
-      new(:dets.select(c))
+    def next(%Selection{continuation: continuation}) do
+      new(:dets.select(continuation))
     end
   end
 
@@ -242,16 +234,13 @@ defmodule Dexts do
   Select terms in the given table using a match_spec, see `dets:select`.
   """
   @spec select(table, any) :: Selection.t | nil
-  def select(table, match_spec) do
+  def select(table, match_spec, options \\ [])
+
+  def select(table, match_spec, []) do
     Selection.new(:dets.select(table, match_spec))
   end
 
-  @doc """
-  Select terms in the given table using a match_spec passing a limit, see
-  `dets:select`.
-  """
-  @spec select(table, non_neg_integer, any) :: Selection.t | nil
-  def select(table, limit, match_spec) when is_integer limit do
+  def select(table, match_spec, limit: limit) do
     Selection.new(:dets.select(table, match_spec, limit))
   end
 
@@ -262,38 +251,23 @@ defmodule Dexts do
     next set of values by calling `.next`.
     """
 
-    @opaque t :: record
-
-    defrecordp :match, __MODULE__, values: [], continuation: nil, whole: false
+    defstruct values: [], continuation: nil, whole: false
 
     @doc """
     Get a Match from the various match results.
     """
-    def new(value, whole // false) do
+    def new(value, whole \\ false) do
       case value do
         :'$end_of_table' -> nil
         []               -> nil
         { [], _ }        -> nil
 
-        { v, c } -> match(values: v, continuation: c, whole: whole)
-        [_ | _]  -> match(values: value, whole: whole)
+        { values, continuation } ->
+          %Match{values: values, continuation: continuation, whole: whole}
+
+        [_ | _] ->
+          %Match{values: value, whole: whole}
       end
-    end
-
-    @doc """
-    Check if the Match is matching whole objects.
-    """
-    @spec whole?(t) :: boolean
-    def whole?(match(whole: whole)) do
-      whole
-    end
-
-    @doc """
-    Get the values in the current Match.
-    """
-    @spec values(t) :: [any]
-    def values(match(values: v)) do
-      v
     end
 
     @doc """
@@ -301,16 +275,16 @@ defmodule Dexts do
     are no more.
     """
     @spec next(t) :: Match.t | nil
-    def next(match(continuation: nil)) do
+    def next(%Match{continuation: nil}) do
       nil
     end
 
-    def next(match(whole: true, continuation: c)) do
-      new(:dets.match_object(c))
+    def next(%Match{whole: true, continuation: continuation}) do
+      new(:dets.match_object(continuation))
     end
 
-    def next(match(whole: false, continuation: c)) do
-      new(:dets.match(c))
+    def next(%Match{whole: false, continuation: continuation}) do
+      new(:dets.match(continuation))
     end
   end
 
@@ -323,14 +297,15 @@ defmodule Dexts do
   end
 
   @doc """
-  Match terms from the given table with the given pattern and options or
-  limit, see `dets:match`.
+  Match terms from the given table with the given pattern and options, see
+  `dets:match`.
 
   ## Options
 
   * `:whole` when true it returns the whole term.
   * `:delete` when true it deletes the matching terms instead of returning
     them.
+  * `:limit` the amount of elements to select at a time.
   """
   @spec match(table, any | integer, Keyword.t | any) :: Match.t | nil
   def match(table, pattern, delete: true) do
@@ -341,16 +316,11 @@ defmodule Dexts do
     Match.new(:dets.match_object(table, pattern))
   end
 
-  def match(table, limit, pattern) when is_integer limit do
+  def match(table, pattern, limit: limit) do
     Match.new(:dets.match(table, pattern, limit))
   end
 
-  @doc """
-  Match term from the given table with the given pattern, options and limit,
-  see `dets:match_object`.
-  """
-  @spec match(table, integer, any, Keyword.t) :: Match.t | nil
-  def match(table, limit, pattern, whole: true) do
+  def match(table, pattern, limit: limit, whole: true) do
     Match.new(:dets.match_object(table, pattern, limit))
   end
 
@@ -382,12 +352,14 @@ defmodule Dexts do
   """
   @spec write(table, term)            :: boolean
   @spec write(table, term, Keyword.t) :: boolean
-  def write(table, object, options // []) do
-    if options[:overwrite] == false do
-      :dets.insert_new(table, object)
-    else
-      :dets.insert(table, object)
-    end
+  def write(table, object, options \\ [])
+
+  def write(table, object, overwrite: false) do
+    :dets.insert_new(table, object)
+  end
+
+  def write(table, object, []) do
+    :dets.insert(table, object)
   end
 
   @doc """

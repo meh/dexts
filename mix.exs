@@ -3,20 +3,15 @@ defmodule Dexts.Mixfile do
 
   def project do
     [ app: :dexts,
-      version: "0.0.1",
-      deps: deps ]
+      version: "0.1.0",
+      elixir: "~> 0.13.0",
+      package: package,
+      description: "dets wrapper for Elixir" ]
   end
 
-  # Configuration for the OTP application
-  def application do
-    [ applications: [:finalizer],
-      mod: { Dexts.Manager, [] } ]
-  end
-
-  # Returns the list of dependencies in the format:
-  # { :foobar, "0.1", git: "https://github.com/elixir-lang/foobar.git" }
-  defp deps do
-    [ { :finalizer, github: "meh/elixir-finalizer" },
-      { :datastructures, github: "meh/elixir-datastructures" } ]
+  defp package do
+    [ contributors: ["meh"],
+      licenses: ["WTFPL"],
+      links: [ { "GitHub", "https://github.com/meh/dexts" } ] ]
   end
 end
