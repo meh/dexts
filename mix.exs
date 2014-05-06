@@ -3,7 +3,7 @@ defmodule Dexts.Mixfile do
 
   def project do
     [ app: :dexts,
-      version: "0.1.0",
+      version: "0.1.1-dev",
       elixir: "~> 0.13.0",
       package: package,
       description: "dets wrapper for Elixir" ]
