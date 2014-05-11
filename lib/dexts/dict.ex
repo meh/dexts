@@ -139,26 +139,6 @@ defmodule Dexts.Dict do
     end
   end
 
-  def update(self, key, initial, fun) do
-    case fetch(self, key) do
-      { :ok, value } ->
-        put(self, key, fun.(value))
-
-      :error ->
-        put(self, key, initial)
-    end
-  end
-
-  def update!(self, key, fun) do
-    case fetch(self, key) do
-      { :ok, value } ->
-        put(self, key, fun.(value))
-
-      :error ->
-        raise KeyError, key: key, term: self
-    end
-  end
-
   @doc """
   Read the terms in the given slot, see `ets:slot`.
   """
