@@ -291,7 +291,7 @@ defmodule Dexts.Dict do
     end
 
     def count(table) do
-      { :ok, Dexts.Dict.count(table) }
+      { :ok, Dexts.Dict.size(table) }
     end
   end
 end
