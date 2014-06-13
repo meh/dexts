@@ -7,13 +7,15 @@
 #  0. You just DO WHAT THE FUCK YOU WANT TO.
 
 defmodule Dexts do
-  defexception FileError, message: nil do
+  defmodule FileError do
     @moduledoc """
     Exception thrown if an error occurs when opening a table.
     """
 
+    defexception message: nil
+
     def exception(reason: { :file_error, path, :enoent }) do
-      FileError[message: to_string(path) <> " doesn't exist"]
+      %FileError{message: to_string(path) <> " doesn't exist"}
     end
   end
 
@@ -36,7 +38,7 @@ defmodule Dexts do
   end
 
   def open(path) when path |> is_binary do
-    :dets.open_file(List.from_char_data!(path))
+    :dets.open_file(String.to_char_list(path))
   end
 
   def open!(path) do
@@ -95,7 +97,7 @@ defmodule Dexts do
       :duplicate_bag -> [{ :type, :duplicate_bag } | args]
     end
 
-    :dets.open_file(List.from_char_data!(name), args)
+    :dets.open_file(String.to_char_list(name), args)
   end
 
   def new!(name, options \\ []) when name |> is_binary do
