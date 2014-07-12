@@ -4,16 +4,14 @@ defmodule DictTest do
   use ExUnit.Case
 
   setup do
-    { :ok, t: Dexts.Dict.new!("test.dat") }
-  end
+    dict = Dexts.Dict.new!("test.dat")
 
-  teardown meta do
-    t = meta[:t]
+    on_exit fn ->
+      dict |> Dexts.Dict.close
+      File.rm("test.dat")
+    end
 
-    t |> Dexts.Dict.close
-    File.rm("test.dat")
-
-    :ok
+    { :ok, t: dict }
   end
 
   test "read works", meta do
