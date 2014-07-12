@@ -183,19 +183,9 @@ defmodule Dexts do
     :dets.foldr(fun, acc, table)
   end
 
-  defmodule Selection do
-    @moduledoc """
-    Selection wraps an `dets:select` result, which may or may not contain a
-    continuation, in case of continuations you can access the next set of
-    values by calling `.next`.
-    """
-
+  defmodule Select do
     defstruct values: [], continuation: nil
 
-    @doc """
-    Get a Selection from the various select results.
-    """
-    @spec new(:'$end_of_table' | list | { list, any }) :: t | nil
     def new(value) do
       case value do
         :'$end_of_table' -> nil
@@ -203,53 +193,45 @@ defmodule Dexts do
         { [], _ }        -> nil
 
         { values, continuation } ->
-          %Selection{values: values, continuation: continuation}
+          %Select{values: values, continuation: continuation}
 
         [_ | _] ->
-          %Selection{values: value}
+          %Select{values: value}
       end
     end
 
-    @doc """
-    Get the next set of values wrapped in another Selection, returns nil if
-    there are no more.
-    """
-    @spec next(t) :: t | nil
-    def next(%Selection{continuation: nil}) do
-      nil
-    end
+    defimpl Dexts.Selection do
+      def next(%Select{continuation: nil}) do
+        nil
+      end
 
-    def next(%Selection{continuation: continuation}) do
-      new(:dets.select(continuation))
+      def next(%Select{continuation: continuation}) do
+        Select.new(:dets.select(continuation))
+      end
+
+      def values(%Select{values: values}) do
+        values
+      end
     end
   end
 
   @doc """
   Select terms in the given table using a match_spec, see `dets:select`.
   """
-  @spec select(table, any) :: Selection.t | nil
+  @spec select(table, any) :: Dexts.Selection.t | nil
   def select(table, match_spec, options \\ [])
 
   def select(table, match_spec, []) do
-    Selection.new(:dets.select(table, match_spec))
+    Select.new(:dets.select(table, match_spec))
   end
 
   def select(table, match_spec, limit: limit) do
-    Selection.new(:dets.select(table, match_spec, limit))
+    Select.new(:dets.select(table, match_spec, limit))
   end
 
   defmodule Match do
-    @moduledoc """
-    Match wraps an `dets:match` or `dets:match_object` result, which may or may
-    not contain a continuation, in case of continuations you can access the
-    next set of values by calling `.next`.
-    """
-
     defstruct values: [], continuation: nil, whole: false
 
-    @doc """
-    Get a Match from the various match results.
-    """
     def new(value, whole \\ false) do
       case value do
         :'$end_of_table' -> nil
@@ -264,28 +246,25 @@ defmodule Dexts do
       end
     end
 
-    @doc """
-    Get the next set of values wrapped in another Match, returns nil if there
-    are no more.
-    """
-    @spec next(t) :: Match.t | nil
-    def next(%Match{continuation: nil}) do
-      nil
-    end
+    defimpl Dexts.Selection do
+      def next(%Match{continuation: nil}) do
+        nil
+      end
 
-    def next(%Match{whole: true, continuation: continuation}) do
-      new(:dets.match_object(continuation))
-    end
+      def next(%Match{whole: true, continuation: continuation}) do
+        Match.new(:dets.match_object(continuation))
+      end
 
-    def next(%Match{whole: false, continuation: continuation}) do
-      new(:dets.match(continuation))
+      def values(%Match{values: values}) do
+        values
+      end
     end
   end
 
   @doc """
   Match terms from the given table with the given pattern, see `dets:match`.
   """
-  @spec match(table, any) :: Match.t | nil
+  @spec match(table, any) :: Dexts.Selection.t | nil
   def match(table, pattern) do
     Match.new(:dets.match(table, pattern))
   end
@@ -301,7 +280,7 @@ defmodule Dexts do
     them.
   * `:limit` the amount of elements to select at a time.
   """
-  @spec match(table, any | integer, Keyword.t | any) :: Match.t | nil
+  @spec match(table, any | integer, Keyword.t | any) :: Dexts.Selection.t | nil
   def match(table, pattern, delete: true) do
     :dets.match_delete(table, pattern)
   end

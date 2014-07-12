@@ -8,7 +8,7 @@
 
 defmodule Dexts.Dict do
   defstruct [:id, :type]
-
+  @opaque t :: %Dexts.Dict{}
   alias __MODULE__, as: T
 
   use Dict
@@ -196,7 +196,7 @@ defmodule Dexts.Dict do
   @doc """
   Select terms in the table using a match_spec, see `ets:select`.
   """
-  @spec select(t, any, Keyword.t) :: [any]
+  @spec select(t, any, Keyword.t) :: Dexts.Selection.t | nil
   def select(%T{id: id}, match_spec, options \\ []) do
     Dexts.select(id, match_spec, options)
   end
@@ -205,7 +205,7 @@ defmodule Dexts.Dict do
   Select terms in the table using a match_spec, traversing in reverse, see
   `ets:select_reverse`.
   """
-  @spec reverse_select(t, any) :: [any]
+  @spec reverse_select(t, any) :: Dexts.Selection.t | nil
   def reverse_select(%T{id: id}, match_spec, options \\ []) do
     Dexts.reverse_select(id, match_spec, options)
   end
@@ -213,7 +213,7 @@ defmodule Dexts.Dict do
   @doc """
   Match terms from the table with the given pattern, see `ets:match`.
   """
-  @spec match(t, any) :: Match.t | nil
+  @spec match(t, any) :: Dexts.Selection.t | nil
   def match(%T{id: id}, pattern, options \\ []) do
     Dexts.match(id, pattern, options)
   end
