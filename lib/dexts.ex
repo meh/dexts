@@ -7,19 +7,12 @@
 #  0. You just DO WHAT THE FUCK YOU WANT TO.
 
 defmodule Dexts do
-  defmodule FileError do
-    @moduledoc """
-    Exception thrown if an error occurs when opening a table.
-    """
-
-    defexception message: nil
-
-    def exception(reason: { :file_error, path, :enoent }) do
-      %FileError{message: to_string(path) <> " doesn't exist"}
-    end
-  end
-
   @type table :: term
+
+  alias Dexts.FileError
+  alias Dexts.Selection
+  alias Dexts.Select
+  alias Dexts.Match
 
   @spec info(table) :: Keyword.t | nil
   def info(table) do
@@ -183,42 +176,10 @@ defmodule Dexts do
     :dets.foldr(fun, acc, table)
   end
 
-  defmodule Select do
-    defstruct values: [], continuation: nil
-
-    def new(value) do
-      case value do
-        :'$end_of_table' -> nil
-        []               -> nil
-        { [], _ }        -> nil
-
-        { values, continuation } ->
-          %Select{values: values, continuation: continuation}
-
-        [_ | _] ->
-          %Select{values: value}
-      end
-    end
-
-    defimpl Dexts.Selection do
-      def next(%Select{continuation: nil}) do
-        nil
-      end
-
-      def next(%Select{continuation: continuation}) do
-        Select.new(:dets.select(continuation))
-      end
-
-      def values(%Select{values: values}) do
-        values
-      end
-    end
-  end
-
   @doc """
   Select terms in the given table using a match_spec, see `dets:select`.
   """
-  @spec select(table, any) :: Dexts.Selection.t | nil
+  @spec select(table, any) :: Selection.t | nil
   def select(table, match_spec, options \\ [])
 
   def select(table, match_spec, []) do
@@ -229,42 +190,10 @@ defmodule Dexts do
     Select.new(:dets.select(table, match_spec, limit))
   end
 
-  defmodule Match do
-    defstruct values: [], continuation: nil, whole: false
-
-    def new(value, whole \\ false) do
-      case value do
-        :'$end_of_table' -> nil
-        []               -> nil
-        { [], _ }        -> nil
-
-        { values, continuation } ->
-          %Match{values: values, continuation: continuation, whole: whole}
-
-        [_ | _] ->
-          %Match{values: value, whole: whole}
-      end
-    end
-
-    defimpl Dexts.Selection do
-      def next(%Match{continuation: nil}) do
-        nil
-      end
-
-      def next(%Match{whole: true, continuation: continuation}) do
-        Match.new(:dets.match_object(continuation))
-      end
-
-      def values(%Match{values: values}) do
-        values
-      end
-    end
-  end
-
   @doc """
   Match terms from the given table with the given pattern, see `dets:match`.
   """
-  @spec match(table, any) :: Dexts.Selection.t | nil
+  @spec match(table, any) :: Selection.t | nil
   def match(table, pattern) do
     Match.new(:dets.match(table, pattern))
   end
@@ -280,7 +209,7 @@ defmodule Dexts do
     them.
   * `:limit` the amount of elements to select at a time.
   """
-  @spec match(table, any | integer, Keyword.t | any) :: Dexts.Selection.t | nil
+  @spec match(table, any | integer, Keyword.t | any) :: Selection.t | nil
   def match(table, pattern, delete: true) do
     :dets.match_delete(table, pattern)
   end
