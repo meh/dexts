@@ -12,6 +12,6 @@ defmodule Dexts.Mixfile do
   defp package do
     [ contributors: ["meh", "cereal"],
       licenses: ["WTFPL"],
-      links: [ { "GitHub", "https://github.com/meh/dexts" } ] ]
+      links: %{ "GitHub" => "https://github.com/meh/dexts" }
   end
 end
