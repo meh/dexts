@@ -45,9 +45,7 @@ defmodule Dexts do
   end
 
   def new(name, options \\ []) when name |> is_binary do
-    args = []
-
-    args = [{ :keypos, (options[:index] || 0) + 1 } | args]
+    args = [{ :keypos, (options[:index] || 0) + 1 }]
 
     if options[:path] do
       args = [{ :file, options[:path] } | args]
@@ -174,6 +172,27 @@ defmodule Dexts do
   @spec foldr(table, any, (term, any -> any)) :: any
   def foldr(table, acc, fun) do
     :dets.foldr(fun, acc, table)
+  end
+
+  @doc """
+  Delete the term matching the given pattern or key in the given table, see
+  `ets:select_delete` and `ets:delete`.
+  """
+  @spec delete(table, any) :: true | integer
+  def delete(table, [{ _, _, _ } | _] = match_spec) do
+    :dets.select_delete(table, match_spec)
+  end
+
+  def delete(table, key) do
+    :dets.delete(table, key)
+  end
+
+  @doc """
+  Delete the given term from the given table, see `ets:delete_object`.
+  """
+  @spec delete!(table, term) :: true
+  def delete!(table, object) do
+    :dets.delete_object(table, object)
   end
 
   @doc """

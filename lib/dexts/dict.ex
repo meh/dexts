@@ -11,10 +11,8 @@ defmodule Dexts.Dict do
   @opaque t :: %Dexts.Dict{}
   alias __MODULE__, as: T
 
-  use Dict
-
   def new do
-    raise FileError
+    raise Dexts.FileError
   end
 
   @doc """
@@ -24,38 +22,47 @@ defmodule Dexts.Dict do
   def new(name, options \\ []) do
     case Dexts.new(name, options) do
       { :ok, id } ->
-        { :ok, %T{id: id, type: options[:type] || :set} }
+        { :ok, %__MODULE__{id: id, type: options[:type] || :set} }
 
       { :error, reason } ->
         { :error, reason }
     end
   end
 
+  @doc """
+  Wrap a table or create one with the passed options.
+  """
   def new!(name, options \\ []) do
-    %T{id: Dexts.new!(name, options), type: options[:type] || :set}
+    %__MODULE__{id: Dexts.new!(name, options), type: options[:type] || :set}
   end
 
+  @doc """
+  Open an already existing table.
+  """
   def open(name) do
     case Dexts.open(name) do
       { :error, reason } ->
         { :error, reason }
 
       { :ok, id } ->
-        { :ok, %T{id: id, type: Dexts.info(id, :type)} }
+        { :ok, %__MODULE__{id: id, type: Dexts.info(id, :type)} }
     end
   end
 
+  @doc """
+  Open an already existing table.
+  """
   def open!(name) do
     id = Dexts.open!(name)
 
-    %T{id: id, type: Dexts.info(id, :type)}
+    %__MODULE__{id: id, type: Dexts.info(id, :type)}
   end
 
   @doc """
   Check if the table is a bag.
   """
   @spec bag?(t) :: boolean
-  def bag?(%T{type: type}) do
+  def bag?(%__MODULE__{type: type}) do
     type == :bag
   end
 
@@ -63,7 +70,7 @@ defmodule Dexts.Dict do
   Check if the table is a duplicate bag.
   """
   @spec duplicate_bag?(t) :: boolean
-  def duplicate_bag?(%T{type: type}) do
+  def duplicate_bag?(%__MODULE__{type: type}) do
     type == :duplicate_bag
   end
 
@@ -71,7 +78,7 @@ defmodule Dexts.Dict do
   Check if the table is a set.
   """
   @spec set?(t) :: boolean
-  def set?(%T{type: type}) do
+  def set?(%__MODULE__{type: type}) do
     type == :set
   end
 
@@ -79,7 +86,7 @@ defmodule Dexts.Dict do
   Get info about the table, see `dets:info`.
   """
   @spec info(t) :: [any] | nil
-  def info(%T{id: id}) do
+  def info(%__MODULE__{id: id}) do
     Dexts.info(id)
   end
 
@@ -87,39 +94,35 @@ defmodule Dexts.Dict do
   Get info about the table, see `dets:info`.
   """
   @spec info(t, atom) :: any | nil
-  def info(%T{id: id}, key) do
+  def info(%__MODULE__{id: id}, key) do
     Dexts.info(id, key)
-  end
-
-  def size(%T{id: id}) do
-    Dexts.count(id)
   end
 
   @doc """
   Clear the contents of the table, see `dets:delete_all_objects`.
   """
-  def clear(%T{id: id}) do
+  def clear(%__MODULE__{id: id}) do
     Dexts.clear(id)
   end
 
   @doc """
   Close the table, see `dets:close`.
   """
-  def close(%T{id: id}) do
+  def close(%__MODULE__{id: id}) do
     Dexts.close(id)
   end
 
-  def delete(%T{id: id}, key_or_pattern) do
+  def delete(%__MODULE__{id: id}, key_or_pattern) do
     Dexts.delete(id, key_or_pattern)
   end
 
-  def put(%T{id: id} = self, key, value) do
+  def put(%__MODULE__{id: id} = self, key, value) do
     Dexts.write id, { key, value }
 
     self
   end
 
-  def fetch(%T{id: id, type: type}, key) when type in [:bag, :duplicate_bag] do
+  def fetch(%__MODULE__{id: id, type: type}, key) when type in [:bag, :duplicate_bag] do
     case Dexts.read(id, key) do
       [] ->
         :error
@@ -129,7 +132,7 @@ defmodule Dexts.Dict do
     end
   end
 
-  def fetch(%T{id: id, type: type}, key) when type in [:set, :ordered_set] do
+  def fetch(%__MODULE__{id: id, type: type}, key) when type in [:set, :ordered_set] do
     case Dexts.read(id, key) do
       [] ->
         :error
@@ -143,7 +146,7 @@ defmodule Dexts.Dict do
   Read the terms in the given slot, see `ets:slot`.
   """
   @spec at(integer, t) :: [term]
-  def at(%T{id: id}, slot) do
+  def at(%__MODULE__{id: id}, slot) do
     Dexts.at(id, slot)
   end
 
@@ -151,7 +154,7 @@ defmodule Dexts.Dict do
   Get the first key in table, see `ets:first`.
   """
   @spec first(t) :: any
-  def first(%T{id: id}) do
+  def first(%__MODULE__{id: id}) do
     Dexts.first(id)
   end
 
@@ -159,24 +162,8 @@ defmodule Dexts.Dict do
   Get the next key in the table, see `ets:next`.
   """
   @spec next(any, t) :: any
-  def next(%T{id: id}, key) do
+  def next(%__MODULE__{id: id}, key) do
     Dexts.next(id, key)
-  end
-
-  @doc """
-  Get the previous key in the table, see `ets:prev`.
-  """
-  @spec prev(any, t) :: any
-  def prev(%T{id: id}, key) do
-    Dexts.prev(id, key)
-  end
-
-  @doc """
-  Get the last key in the table, see `ets:last`.
-  """
-  @spec last(t) :: any
-  def last(%T{id: id}) do
-    Dexts.last(id)
   end
 
   def keys(self) do
@@ -197,24 +184,15 @@ defmodule Dexts.Dict do
   Select terms in the table using a match_spec, see `ets:select`.
   """
   @spec select(t, any, Keyword.t) :: Dexts.Selection.t | nil
-  def select(%T{id: id}, match_spec, options \\ []) do
+  def select(%__MODULE__{id: id}, match_spec, options \\ []) do
     Dexts.select(id, match_spec, options)
   end
 
-  @doc """
-  Select terms in the table using a match_spec, traversing in reverse, see
-  `ets:select_reverse`.
-  """
-  @spec reverse_select(t, any) :: Dexts.Selection.t | nil
-  def reverse_select(%T{id: id}, match_spec, options \\ []) do
-    Dexts.reverse_select(id, match_spec, options)
-  end
-
-  @doc """
+    @doc """
   Match terms from the table with the given pattern, see `ets:match`.
   """
   @spec match(t, any) :: Dexts.Selection.t | nil
-  def match(%T{id: id}, pattern, options \\ []) do
+  def match(%__MODULE__{id: id}, pattern, options \\ []) do
     Dexts.match(id, pattern, options)
   end
 
@@ -222,7 +200,7 @@ defmodule Dexts.Dict do
   Get the number of terms in the table.
   """
   @spec count(t) :: non_neg_integer
-  def count(%T{id: id}) do
+  def count(%__MODULE__{id: id}) do
     Dexts.count(id)
   end
 
@@ -230,7 +208,7 @@ defmodule Dexts.Dict do
   Count the number of terms matching the match_spec, see `ets:select_count`.
   """
   @spec count(t, any) :: non_neg_integer
-  def count(%T{id: id}, spec) do
+  def count(%__MODULE__{id: id}, spec) do
     Dexts.count(id, spec)
   end
 
@@ -238,7 +216,7 @@ defmodule Dexts.Dict do
   Fold the table from the left, see `ets:foldl`.
   """
   @spec foldl(t, any, (term, any -> any)) :: any
-  def foldl(%T{id: id}, acc, fun) do
+  def foldl(%__MODULE__{id: id}, acc, fun) do
     Dexts.foldl(id, acc, fun)
   end
 
@@ -246,7 +224,7 @@ defmodule Dexts.Dict do
   Fold the table from the right, see `ets:foldr`.
   """
   @spec foldr(t, any, (term, any -> any)) :: any
-  def foldr(%T{id: id}, acc, fun) do
+  def foldr(%__MODULE__{id: id}, acc, fun) do
     Dexts.foldr(id, acc, fun)
   end
 
@@ -268,35 +246,48 @@ defmodule Dexts.Dict do
   end
 
   defp reduce(table, key, { :cont, acc }, fun) do
-    reduce(table, next(table, key), fun.({ key, fetch!(table, key) }, acc), fun)
+    reduce(table, next(table, key), fun.({ key, Data.Dict.get!(table, key) }, acc), fun)
   end
 
-  defimpl Access do
-    def get(table, key) do
-      Dict.get(table, key)
+  alias Data.Protocol, as: P
+
+  defimpl P.Dictionary do
+    defdelegate fetch(self, key), to: T
+    defdelegate put(self, key, value), to: T
+    defdelegate delete(self, key), to: T
+    defdelegate keys(self), to: T
+    defdelegate values(self), to: T
+  end
+
+  defimpl P.Empty do
+    def empty?(self) do
+      Dexts.Dict.count(self) == 0
     end
 
-    def get_and_update(table, key, fun) do
-      { get, update } = fun.(Dict.get(table, key))
-      { get, Dict.put(table, key, update) }
+    defdelegate clear(self), to: T
+  end
+
+  defimpl P.Count do
+    defdelegate count(self), to: T
+  end
+
+  defimpl P.Reduce do
+    defdelegate reduce(self, acc, fun), to: T
+  end
+
+  defimpl P.ToSequence do
+    def to_sequence(%T{id: id}) do
+      Dexts.Sequence.new(id)
+    end
+  end
+
+  defimpl P.Contains do
+    def contains?(self, key) do
+      match? { :ok, _ }, T.fetch(self, key)
     end
   end
 
   defimpl Enumerable do
-    def reduce(table, acc, fun) do
-      Dexts.Dict.reduce(table, acc, fun)
-    end
-
-    def member?(table, { key, value }) do
-      { :ok, match?({ :ok, ^value }, Dexts.Dict.fetch(table, key)) }
-    end
-
-    def member?(_, _) do
-      { :ok, false }
-    end
-
-    def count(table) do
-      { :ok, Dexts.Dict.size(table) }
-    end
+    use Data.Enumerable
   end
 end

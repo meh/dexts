@@ -3,15 +3,20 @@ defmodule Dexts.Mixfile do
 
   def project do
     [ app: :dexts,
-      version: "0.2.0",
-      elixir: "~> 1.0.0",
+      version: "0.3.0",
+      deps:    deps,
       package: package,
       description: "dets wrapper for Elixir" ]
   end
 
   defp package do
-    [ contributors: ["meh", "cereal"],
+    [ maintainers: ["meh", "cereal"],
       licenses: ["WTFPL"],
-      links: [ { "GitHub", "https://github.com/meh/dexts" } ] ]
+      links: %{"GitHub" => "https://github.com/meh/dexts"} ]
+  end
+
+  defp deps do
+    [ { :datastructures, "~> 0.2" },
+      { :ex_doc, "~> 0.11", only: [:dev] } ]
   end
 end
