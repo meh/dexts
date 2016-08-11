@@ -45,50 +45,54 @@ defmodule Dexts do
   end
 
   def new(name, options \\ []) when name |> is_binary do
-    args = [{ :keypos, (options[:index] || 0) + 1 }]
+    options = options
+      |> Keyword.put_new(:index, 0)
+      |> Keyword.put_new(:mode, :both)
+      |> Keyword.put_new(:type, :set)
 
-    if options[:path] do
-      args = [{ :file, options[:path] } | args]
-    end
+    :dets.open_file(String.to_char_list(name), Enum.flat_map(options, fn
+      { :index, value } ->
+        [{ :keypos, value + 1 }]
 
-    if options[:repair] do
-      args = [{ :repair, options[:repair] } | args]
-    end
+      { :path, value } ->
+        [{ :file, value }]
 
-    if options[:version] do
-      args = [{ :version, options[:version] } | args]
-    end
+      { :repair, value } ->
+        [{ :repair, value }]
 
-    if options[:asynchronous] do
-      args = [{ :ram_file, true } | args]
-    end
+      { :version, value } ->
+        [{ :version, value }]
 
-    if slots = options[:slots] do
-      if slots[:min] do
-        args = [{ :min_no_slots, slots[:min] } | args]
-      end
+      { :asynchronous, true } ->
+        [{ :ram_file, true }]
 
-      if slots[:max] do
-        args = [{ :max_no_slots, slots[:max] } | args]
-      end
-    end
+      { :slots, value } ->
+        Enum.map(value, fn
+          { :min, value } ->
+            { :min_no_slots, value }
 
-    if options[:save_every] do
-      args = [{ :auto_save, options[:save_every] } | args]
-    end
+          { :max, value } ->
+            { :max_no_slots, value }
+        end)
 
-    args = case options[:mode] || :both do
-      :both -> [{ :access, :read_write } | args]
-      :read -> [{ :access, :read } | args]
-    end
+      { :save_every, value } ->
+        [{ :auto_save, value }]
 
-    args = case options[:type] || :set do
-      :set           -> [{ :type, :set } | args]
-      :bag           -> [{ :type, :bag } | args]
-      :duplicate_bag -> [{ :type, :duplicate_bag } | args]
-    end
+      { :mode, :both } ->
+        [{ :access, :read_write }]
 
-    :dets.open_file(String.to_char_list(name), args)
+      { :mode, :read } ->
+        [{ :access, :read }]
+
+      { :type, :set } ->
+        [{ :type, :set }]
+
+      { :type, :bag } ->
+        [{ :type, :bag }]
+
+      { :type, :duplicate_bag } ->
+        [{ :type, :duplicate_bag }]
+    end))
   end
 
   def new!(name, options \\ []) when name |> is_binary do
